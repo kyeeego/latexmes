@@ -22,7 +22,7 @@ func (h *Handler) HandleRegister(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, map[string]string{"username": body.Username})
+	c.JSON(201, map[string]string{"username": body.Username})
 }
 
 func (h *Handler) HandleLogin(c *gin.Context) {
@@ -32,35 +32,35 @@ func (h *Handler) HandleLogin(c *gin.Context) {
 		return
 	}
 
-	token, err := h.services.Auth.Login(body.Username, body.Password)
+	tokens, err := h.services.Auth.Login(body)
 	if err != nil {
 		c.AbortWithStatusJSON(401, map[string]string{"error": err.Error()})
 		return
 	}
 
-	c.JSON(200, map[string]string{"token": token})
+	c.JSON(200, tokens)
 }
 
-func (h *Handler) HandleAuthorize(c *gin.Context) {
+func (h *Handler) authorize(c *gin.Context) {
 	authHeader := c.GetHeader("Authorization")
 	if authHeader == "" {
-		c.JSON(401, errors.New("no auth header"))
+		c.AbortWithStatusJSON(401, map[string]error{"error": errors.New("no auth header")})
 		return
 	}
 	a := strings.Split(authHeader, " ")
 	if a[0] != "Bearer" || len(a) < 2 {
-		c.JSON(401, errors.New("invalid auth header"))
+		c.AbortWithStatusJSON(401, map[string]error{"error": errors.New("invalid auth header")})
 		return
 	}
 
 	token := a[1]
 	userId, err := h.services.Auth.Authorize(token)
 	if err != nil {
-		c.JSON(403, errors.New("invalid token"))
+		c.AbortWithStatusJSON(403, map[string]error{"error": errors.New("invalid token")})
 		return
 	}
 
-	c.JSON(200, map[string]int{"user_id": userId})
+	c.Set("userid", uint(userId))
 }
 
 func (h *Handler) HandleGet(c *gin.Context) {

@@ -13,14 +13,18 @@ func newMessageRepository(db *gorm.DB) *messageRepository {
 	return &messageRepository{db}
 }
 
-func (r *messageRepository) SaveMessage(msg domain.Message) error {
-	res := r.db.Create(msg)
+// TODO thgis is disgusting
+func (r *messageRepository) SaveMessage(msg *domain.Message) error {
+	r.db.Model(&domain.Message{}).Save(msg)
+	var mdl *domain.Message
+	res := r.db.Model(&domain.Message{}).Preload("Connection").Find(&mdl, msg.ID)
+	msg.Connection = mdl.Connection
 	return res.Error
 }
 
 func (r *messageRepository) GetConnectionMessages(connection uint) ([]domain.Message, error) {
 	var messages []domain.Message
-	res := r.db.Where("connection_id = ?", connection).Find(&messages)
+	res := r.db.Where("connection_id = ?", connection).Preload("Connection").Find(&messages)
 
 	return messages, res.Error
 }

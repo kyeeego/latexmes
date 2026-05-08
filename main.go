@@ -1,10 +1,13 @@
-package latexmes
+package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/url"
 
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/kyeeego/latexmes/config"
 	"github.com/kyeeego/latexmes/delivery/http"
 	"github.com/kyeeego/latexmes/delivery/ws"
@@ -31,10 +34,16 @@ func main() {
 		log.Fatalf("Could not connect to database: %e\n", err)
 	}
 
-	wsHandler := ws.NewHandler()
+	cfg, err := awsconfig.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	s3client := s3.NewFromConfig(cfg)
 
 	repos := repository.New(db)
-	services := service.New(repos)
+	services := service.New(repos, s3client)
+	wsHandler := ws.NewHandler(services)
 	handler := http.New(services, wsHandler)
 
 	s := &server.Server{}

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"log"
 
 	"github.com/kyeeego/latexmes/domain"
 	"gorm.io/gorm"
@@ -15,15 +16,22 @@ func newConnectionRepository(db *gorm.DB) *connectionRepository {
 	return &connectionRepository{db}
 }
 
+func (r *connectionRepository) GetById(id uint) (*domain.Connection, error) {
+	var conn *domain.Connection
+	res := r.db.Find(&conn, id)
+
+	return conn, res.Error
+}
+
 func (r *connectionRepository) GetUserConnections(id uint) ([]domain.Connection, error) {
 	var conns []domain.Connection
-	res := r.db.Where("U1 = ? OR U2 = ?", id).Find(&conns)
+	res := r.db.Where("U1 = ? OR U2 = ?", id, id).Find(&conns)
 
 	return conns, res.Error
 }
 
 func (r *connectionRepository) CreateConnection(u1 uint, u2 uint) error {
-	conn := domain.Connection{
+	conn := &domain.Connection{
 		U1: u1,
 		U2: u2,
 	}
@@ -33,12 +41,9 @@ func (r *connectionRepository) CreateConnection(u1 uint, u2 uint) error {
 }
 
 func (r *connectionRepository) Exists(u1 uint, u2 uint) (bool, error) {
-	conn := domain.Connection{
-		U1: u1,
-		U2: u2,
-	}
-
-	err := r.db.Find(nil, conn).Error
+	var conn *domain.Connection
+	err := r.db.Where("U1 = ? AND U2 = ? OR U1 = ? AND U2 = ?", u1, u2, u2, u1).First(&conn).Error
+	log.Println(err)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return false, nil

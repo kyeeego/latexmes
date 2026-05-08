@@ -27,7 +27,7 @@ func (r userRepository) GetById(id uint) (domain.User, error) {
 
 func (r userRepository) GetByUsername(username string) (domain.User, error) {
 	user := domain.User{}
-	res := r.db.Model(domain.User{Username: username}).First(&user)
+	res := r.db.Where("username = ?", username).First(&user)
 
 	return user, res.Error
 }

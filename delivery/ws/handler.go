@@ -1,11 +1,15 @@
 package ws
 
 import (
+	"errors"
+	"fmt"
 	"html/template"
 	"log"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"github.com/kyeeego/latexmes/domain"
 	"github.com/kyeeego/latexmes/domain/dto"
 	"github.com/kyeeego/latexmes/service"
 )
@@ -16,11 +20,14 @@ type Handler struct {
 	services    *service.Service
 }
 
-func NewHandler() *Handler {
-	return &Handler{
+func NewHandler(services *service.Service) *Handler {
+	h := &Handler{
 		upgrader:    &websocket.Upgrader{},
 		connections: make(map[uint]*websocket.Conn),
+		services:    services,
 	}
+
+	return h
 }
 
 func (h *Handler) Connect(c *gin.Context) {
@@ -32,17 +39,28 @@ func (h *Handler) Connect(c *gin.Context) {
 		return
 	}
 
+	log.Println("Connected ", userid)
+
 	h.connections[userid] = conn
 	go h.readConnection(conn, userid)
 
-	// TODO send unsent messages
-	// unsent := h.services.Chat.GetUndeliveredMessages(userid)
-	// h.services.Chat.SetMessagesAsSent(userid)
-	// lol
+	// TODO send unsent notifications
+	//
+	unsent, _ := h.services.Notification.GetUnsent(userid)
+	for _, notif := range unsent {
+		err = conn.WriteJSON(notif)
+		if err != nil {
+			log.Println("notif:", err)
+			continue
+		}
+		h.services.Notification.Delete(&notif)
+	}
 }
 
 func (h *Handler) readConnection(conn *websocket.Conn, userid uint) {
 	for {
+		log.Println("Reading from ", userid)
+
 		var msg dto.ChatUpdate
 		err := conn.ReadJSON(&msg)
 		if err != nil {
@@ -50,28 +68,76 @@ func (h *Handler) readConnection(conn *websocket.Conn, userid uint) {
 			break
 		}
 
-		// status := domain.StatusUnsent
-		recip, ok := h.connections[msg.Recipient]
-		if ok {
-			err := recip.WriteJSON(msg)
-			if err != nil {
-				log.Println("write:", err)
-			} else {
-				// status = domain.StatusSent
-			}
+		model, err := h.services.Chat.SaveMessage(msg, userid)
+		if err != nil {
+			log.Println("save:", err)
 		}
 
-		// err = h.services.Chat.SaveMessage(msg, status)
-		// if err != nil {
-		// 	log.Println("save:", err)
-		// }
+		var recip uint
+		if model.Connection.U1 == userid {
+			recip = model.Connection.U2
+		} else {
+			recip = model.Connection.U1
+		}
+		err = h.SendMessage(model, recip)
+		if err != nil {
+			log.Println("send:", err)
+		}
 	}
+
+	delete(h.connections, userid)
 }
+
+func (h *Handler) SendMessage(msg *domain.Message, recipient uint) error {
+	not := domain.Notification{
+		Type:      domain.TypeMessage,
+		Recipient: recipient,
+		Content:   msg,
+	}
+
+	recip, ok := h.connections[recipient]
+	if ok {
+		err := recip.WriteJSON(not)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	h.services.Notification.Save(&not)
+
+	return errors.New("recipient not connected")
+}
+
+func (h *Handler) SendFriendRequest(req *domain.MessageRequest, recipient uint) error {
+	not := domain.Notification{
+		Type:      domain.TypeMessage,
+		Recipient: recipient,
+		Content:   req,
+	}
+
+	recip, ok := h.connections[recipient]
+	if ok {
+		err := recip.WriteJSON(not)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	h.services.Notification.Save(&not)
+
+	return errors.New("recipient not connected")
+}
+
+// {"type":0,"content":"hiikfjhakjfh!!!!","connection":1}
 
 //////////////// FOR TESTING PURPOSES ONLY
 
 func Test(c *gin.Context) {
-	_ = homeTemplate.Execute(c.Writer, "ws://"+c.Request.Host+"/ws")
+	userid64, _ := strconv.ParseUint(c.Param("userid"), 10, 32)
+	userid := uint(userid64)
+	_ = homeTemplate.Execute(c.Writer, "ws://"+c.Request.Host+"/ws/"+fmt.Sprint(userid))
 }
 
 var homeTemplate = template.Must(template.New("").Parse(`

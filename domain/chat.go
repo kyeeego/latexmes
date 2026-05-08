@@ -10,7 +10,7 @@ const (
 )
 
 type Connection struct {
-	gorm.Model
+	ID uint
 	U1 uint
 	U2 uint
 }
@@ -20,7 +20,13 @@ type Message struct {
 	Status       MessageStatus `json:"status"`
 	Content      string        `json:"content"`
 	ConnectionID uint          `json:"connection_id"`
-	SenderID     uint          `json:"sender_id"`
-	Connection   Connection    `json:"-"`
-	Sender       User          `json:"-"`
+	Connection   Connection
+	SenderID     uint `json:"sender_id"`
+	Sender       User
+}
+
+type MessageRequest struct {
+	gorm.Model
+	From uint `json:"from"`
+	To   uint `json:"to"`
 }

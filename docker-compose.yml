@@ -1,18 +1,18 @@
-version: '3'
-
 services:
   latexmes:
     build: .
     ports:
       - "8081:8081"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       - PG_HOST=latexmes_pg
       - PG_USER=admin
       - PG_PASS=admin
       - PG_PORT=5432
       - PG_NAME=latexmes
+      - JWT_KEY=YmVnYW50aHJvd3JvcGVodW5ncnlqb3VybmV5Z3JlYXRlc3RvbGRlcmVxdWFsc2VlZGM=
       - PORT=8081
 
   db:
@@ -24,3 +24,8 @@ services:
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=admin
       - POSTGRES_DB=latexmes
+    healthcheck: 
+      test: ["CMD-SHELL", "pg_isready -d latexmes -U admin"]
+      interval: 5s
+      timeout: 10s
+      retries: 5

@@ -28,13 +28,20 @@ func (h *Handler) initApi(router *gin.Engine) {
 	{
 		a.POST("/signup", h.HandleRegister)
 		a.POST("/login", h.HandleLogin)
-		a.GET("/authorize", h.HandleAuthorize)
-		a.GET("/id/:id", h.HandleGet)
+	}
+
+	api := router.Group("/api")
+	{
+		api.GET("/connections", h.authorize, h.handleGetConnections)
+		api.GET("/messages/:conn", h.authorize, h.handleGetConnectionMessages)
+		// api.GET("/friendrequests", h.handleGetFriendRequests)
+		api.POST("/request/:recid", h.authorize, h.handleFriendRequest)
+		api.POST("/reply", h.authorize, h.handleReplyToRequest)
 	}
 
 	chat := router.Group("/ws")
 	{
-		chat.GET("/", h.wsHandler.Connect)
-		chat.GET("/test", ws.Test)
+		chat.GET("/", h.authorize, h.wsHandler.Connect)
+		chat.GET("/test/:userid", ws.Test)
 	}
 }
