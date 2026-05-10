@@ -16,7 +16,24 @@ func (h *Handler) handleGetConnections(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, conn)
+	res := []map[string]any{}
+	for _, c := range conn {
+		id := c.U1
+		if userid == c.U1 {
+			id = c.U2
+		}
+
+		user, _ := h.services.User.GetById(id)
+		res = append(res, map[string]any{
+			"id": c.ID,
+			"other": map[string]any{
+				"id":       user.ID,
+				"username": user.Username,
+			},
+		})
+	}
+
+	c.JSON(200, res)
 }
 
 func (h *Handler) handleGetConnectionMessages(c *gin.Context) {
