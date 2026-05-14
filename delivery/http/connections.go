@@ -77,6 +77,9 @@ func (h *Handler) handleFriendRequest(c *gin.Context) {
 		return
 	}
 
+	user, _ := h.services.User.GetById(userid)
+	req.FromUser = user
+
 	h.wsHandler.SendFriendRequest(req, uint(recid))
 
 	c.Status(201)

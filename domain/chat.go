@@ -27,6 +27,7 @@ type Message struct {
 
 type MessageRequest struct {
 	gorm.Model
-	From uint `json:"from"`
-	To   uint `json:"to"`
+	From     uint    `json:"from"`
+	FromUser UserDto `json:"from_user" gorm:"-"`
+	To       uint    `json:"to"`
 }
