@@ -2,7 +2,6 @@ package http
 
 import (
 	"errors"
-	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -63,18 +62,14 @@ func (h *Handler) authorize(c *gin.Context) {
 	c.Set("userid", uint(userId))
 }
 
-func (h *Handler) HandleGet(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		c.JSON(400, map[string]error{"error": err})
-		return
-	}
+func (h *Handler) handleSearchUsers(c *gin.Context) {
+	q := c.Query("q")
 
-	dto, err := h.services.User.GetById(uint(id))
+	dtos, err := h.services.User.Search(q)
 	if err != nil {
 		c.JSON(404, map[string]error{"error": err})
 		return
 	}
 
-	c.JSON(200, dto)
+	c.JSON(200, dtos)
 }

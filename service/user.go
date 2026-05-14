@@ -43,3 +43,22 @@ func (s UserServiceImpl) GetById(id uint) (domain.UserDto, error) {
 
 	return domain.UserDto{ID: model.ID, Username: model.Username}, nil
 }
+
+func (s UserServiceImpl) Search(q string) ([]domain.UserDto, error) {
+	models, err := s.repository.User.Search(q)
+	if err != nil {
+		return []domain.UserDto{}, err
+	}
+
+	res := []domain.UserDto{}
+	for _, m := range models {
+		dto := domain.UserDto{
+			ID:       m.ID,
+			Username: m.Username,
+		}
+
+		res = append(res, dto)
+	}
+
+	return res, nil
+}

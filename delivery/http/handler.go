@@ -34,6 +34,7 @@ func (h *Handler) initApi(router *gin.Engine) {
 	{
 		api.GET("/connections", h.authorize, h.handleGetConnections)
 		api.GET("/messages/:conn", h.authorize, h.handleGetConnectionMessages)
+		api.GET("/users", h.authorize, h.handleSearchUsers)
 		// api.GET("/friendrequests", h.handleGetFriendRequests)
 		api.POST("/request/:recid", h.authorize, h.handleFriendRequest)
 		api.POST("/reply", h.authorize, h.handleReplyToRequest)

@@ -9,6 +9,7 @@ type UserRepository interface {
 	GetById(id uint) (domain.User, error)
 	GetByUsername(username string) (domain.User, error)
 	Insert(model *domain.User) error
+	Search(q string) ([]domain.User, error)
 }
 
 type ConnectionRepository interface {

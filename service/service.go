@@ -15,6 +15,7 @@ import (
 type UserService interface {
 	Register(username string, password string) error
 	GetById(id uint) (domain.UserDto, error)
+	Search(q string) ([]domain.UserDto, error)
 }
 
 type AuthService interface {
