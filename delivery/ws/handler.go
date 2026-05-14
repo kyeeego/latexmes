@@ -111,7 +111,7 @@ func (h *Handler) SendMessage(msg *domain.Message, recipient uint) error {
 
 func (h *Handler) SendFriendRequest(req *domain.MessageRequest, recipient uint) error {
 	not := domain.Notification{
-		Type:      domain.TypeMessage,
+		Type:      domain.TypeMsgRequest,
 		Recipient: recipient,
 		Content:   req,
 	}
